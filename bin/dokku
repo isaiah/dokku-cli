@@ -50,9 +50,9 @@ class Dokku2
     end
   end
 
-  def run_command(command)
-    command = command.gsub(/ --remote=[\S]*/, '')
-    dokku_command = "ssh -t -p #{port} dokku@#{domain} #{command} #{app_name}"
+  def run_command(args)
+    command, *args, _remote = args
+    dokku_command = "ssh -t -p #{port} dokku@#{domain} #{command} #{app_name} #{args.join(' ')}"
 
     puts "Running #{dokku_command}..."
     exec(dokku_command)
@@ -73,4 +73,4 @@ end
 
 d = Dokku2.new
 d.parse(ARGV)
-d.run_command ARGV.join(' ')
+d.run_command ARGV
