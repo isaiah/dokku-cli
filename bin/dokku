@@ -1,5 +1,76 @@
 #!/usr/bin/env ruby
-require "rubygems" # ruby1.9 doesn't "require" it though
-require 'dokku_cli'
 
-DokkuCli::Cli.start(ARGV)
+require 'optparse'
+
+class Dokku2
+  attr_accessor :options
+  def initialize
+    @options = {}
+  end
+
+  def parse(args)
+    OptionParser.new do |opts|
+      opts.banner = "Usage: dokku [options]"
+
+      opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+        options[:verbose] = v
+      end
+
+      opts.on('-rNAME', '--remote=NAME', 'git remote name') do |v|
+        options[:remote] = v
+      end
+
+      opts.on('-h', '--help', 'print this message') do
+      end
+    end.parse(args)
+  end
+
+  def git_config
+    remote = "dokku"
+    remote = options[:remote] if options[:remote]
+
+    @git_config ||= begin
+      config_path = File.join(Dir.pwd, ".git", "config")
+      exit unless File.exist?(config_path)
+      config_file = File.read(config_path)
+
+      # Default dokku config: dokku@host.com:app
+      default_style_regex = /\[remote "#{remote}"\]\s+url \= dokku@(?<domain>.*):(?<app_name>.*)$/
+      match ||= config_file.match(default_style_regex)
+
+      # SSH dokku config: ssh://dokku@host.com:1337/app
+      ssh_style_regex = /\[remote "#{remote}"\]\s+url \= ssh:\/\/dokku@(?<domain>.*):(?<port>.*)\/(?<app_name>.*)$/
+      match ||= config_file.match(ssh_style_regex)
+
+      exit unless match
+      match = Hash[match.names.zip(match.captures)]
+      match["port"] ||= 22
+
+      match
+    end
+  end
+
+  def run_command(command)
+    command = command.gsub(/ --remote=[\S]*/, '')
+    dokku_command = "ssh -t -p #{port} dokku@#{domain} #{command} #{app_name}"
+
+    puts "Running #{dokku_command}..."
+    exec(dokku_command)
+  end
+
+  def app_name
+    git_config['app_name']
+  end
+
+  def port
+    git_config['port']
+  end
+
+  def domain
+    git_config['domain']
+  end
+end
+
+d = Dokku2.new
+d.parse(ARGV)
+d.run_command ARGV.join(' ')
