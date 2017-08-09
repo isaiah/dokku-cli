@@ -3,9 +3,9 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'dokku_cli/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "dokku-cli"
+  spec.name          = "dokku-rb"
   spec.version       = DokkuCli::VERSION
-  spec.authors       = ["Sebastian Szturo"]
+  spec.authors       = ["Sebastian Szturo", "Isaiah Peng"]
   spec.email         = ["s.szturo@me.com"]
   spec.description   = "Command line tool for Dokku."
   spec.summary       = "Command line tool for Dokku."
